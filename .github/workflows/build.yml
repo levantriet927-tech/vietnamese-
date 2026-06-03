@@ -1,0 +1,45 @@
+name: Build Unsigned IPA
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Extract Project
+        run: unzip app.zip
+
+      - name: Create Cordova Project
+        run: |
+          cordova create build-folder com.htmlapp.vinhvien "AppHTML"
+          rm -rf build-folder/www
+          mv www build-folder/www
+          mv config.xml build-folder/config.xml
+
+      - name: Build iOS App
+        run: |
+          cd build-folder
+          cordova platform add ios
+          cordova build ios --codeSignIdentity="" --developmentTeam="" --packageType="development"
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r build-folder/platforms/ios/build/emulator/AppHTML.app Payload/
+          zip -r unsigned_app.ipa Payload
+
+      - name: Upload IPA Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-html-app-ipa
+          path: unsigned_app.ipa
