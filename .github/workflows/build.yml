@@ -8,35 +8,36 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install Cordova
-        run: npm install -g cordova
-
-      - name: Extract Project
-        run: unzip app.zip
-
-      - name: Create Cordova Project
+      - name: Setup Xcode Project
         run: |
-          cordova create build-folder com.htmlapp.vinhvien "AppHTML"
-          rm -rf build-folder/www
-          mv www build-folder/www
-          mv config.xml build-folder/config.xml
-
-      - name: Build iOS App
-        run: |
-          cd build-folder
-          cordova platform add ios
-          cordova build ios --codeSignIdentity="" --developmentTeam="" --packageType="development"
-
-      - name: Package IPA
-        run: |
-          mkdir -p Payload
-          cp -r build-folder/platforms/ios/build/emulator/AppHTML.app Payload/
-          zip -r unsigned_app.ipa Payload
+          mkdir -p AppHTML/Payload/AppHTML.app
+          cp index.html AppHTML/Payload/AppHTML.app/www/index.html || cp index.html AppHTML/Payload/AppHTML.app/index.html
+          
+          # Tạo cấu hình tối thiểu cho app iOS hiển thị web
+          cat << 'EOF' > AppHTML/Payload/AppHTML.app/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>AppHTML</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.htmlapp.vinhvien</string>
+              <key>CFBundleName</key>
+              <string>AppHTML</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSRequiresIPhoneOS</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          
+          # Đóng gói thành cấu trúc IPA
+          cd AppHTML
+          zip -r ../unsigned_app.ipa Payload
 
       - name: Upload IPA Output
         uses: actions/upload-artifact@v4
